@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Organ Explorer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0f7fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            background-color: #00796b;
+            color: #fff;
+            width: 100%;
+            padding: 10px 0;
+            text-align: center;
+        }
+        nav {
+            margin: 20px;
+        }
+        button {
+            background-color: #004d40;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #00695c;
+        }
+        .container {
+            max-width: 600px; /* Set a max width for larger screens */
+            width: 90%; /* Use percentage for responsive width */
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        .video, .content {
+            margin-top: 20px;
+        }
+        video, iframe {
+            width: 100%; /* Make video and iframe responsive */
+            height: auto; /* Maintain aspect ratio */
+        }
+        @media (max-width: 600px) {
+            button {
+                width: 100%; /* Full-width buttons on small screens */
+            }
+            header {
+                font-size: 20px; /* Slightly larger text on mobile */
+            }
+        }
+    </style>
+</head>
+<body dir="ltr">
+    <header>
+        <h1 id="title">Human Organ Explorer</h1>
+        <select id="language-select" onchange="changeLanguage()">
+            <option value="en">English</option>
+            <option value="fa">Dari</option>
+            <option value="ps">Pashto</option>
+            <option value="tr">Turkish</option>
+        </select>
+    </header>
+
+    <nav>
+        <button id="heart-button" onclick="showOrgan('heart')">Heart</button>
+        <button id="brain-button" onclick="showOrgan('brain')">Brain</button>
+        <button id="lungs-button" onclick="showOrgan('lungs')">Lungs</button>
+        <button id="liver-button" onclick="showOrgan('liver')">Liver</button>
+    </nav>
+
+    <div class="container" id="organ-info">
+        <h2 id="organ-title">Select an organ to explore</h2>
+    </div>
+
+    <script src="https://threejs.org/build/three.js"></script>
+    <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        const translations = {
+            en: {
+                title: "Human Organ Explorer",
+                selectOrgan: "Select an organ to explore",
+                heart: {
+                    title: "Heart",
+                    description: "The heart is a muscular organ responsible for pumping blood through the blood vessels by repeated, rhythmic contractions.",
+                    facts: [
+                        "Structure: The heart has four chambers: two atria and two ventricles.",
+                        "Function: Pumps blood throughout the body.",
+                        "Location: Center of the chest, slightly to the left.",
+                        "Interesting Fact 1: The average heart beats 100,000 times a day.",
+                        "Interesting Fact 2: It pumps around 5 to 6 liters of blood per minute at rest."
+                    ]
+                },
+                brain: {
+                    title: "Brain",
+                    description: "The brain is the central organ of the human nervous system.",
+                    facts: [
+                        "Function: Controls most of the activities of the body.",
+                        "Location: Inside the skull.",
+                        "Interesting Fact: The human brain contains about 86 billion neurons."
+                    ]
+                },
+                lungs: {
+                    title: "Lungs",
+                    description: "The lungs are essential for breathing and gas exchange.",
+                    facts: [
+                        "Structure: The lungs are made up of millions of tiny air sacs called alveoli.",
+                        "Function: Oxygenate blood and remove carbon dioxide.",
+                        "Location: On either side of the heart in the thoracic cavity.",
+                        "Interesting Fact: The surface area of the lungs is roughly the size of a tennis court."
+                    ]
+                },
+                liver: {
+                    title: "Liver",
+                    description: "The liver is a vital organ with a wide range of functions, including detoxification and metabolism.",
+                    facts: [
+                        "Function: Processes nutrients from the digestive system.",
+                        "Location: Right side of the abdomen, below the diaphragm.",
+                        "Interesting Fact: The liver can regenerate itself; you can lose up to 75% of it and it can still grow back."
+                    ]
+                },
+                buttons: {
+                    heart: "Heart",
+                    brain: "Brain",
+                    lungs: "Lungs",
+                    liver: "Liver"
+                },
+                modelTitle: "3D Model",
+                moreInfo: "More Information"
+            },
+            fa: {
+                title: "اکتشاف اعضای انسان",
+                selectOrgan: "یک عضو را برای بررسی انتخاب کنید",
+                heart: {
+                    title: "قلب",
+                    description: "قلب یک عضو عضلانی است که مسئول پمپاژ خون از طریق رگ‌های خونی است.",
+                    facts: [
+                        "ساختار: قلب چهار حفره دارد: دو دهلیز و دو بطن.",
+                        "عملکرد: خون را در سراسر بدن پمپاژ می‌کند.",
+                        "مکان: در مرکز قفسه سینه، کمی به سمت چپ.",
+                        "واقعیت جالب ۱: قلب به طور متوسط ۱۰۰،۰۰۰ بار در روز می‌تپد.",
+                        "واقعیت جالب ۲: در حالت استراحت، حدود ۵ تا ۶ لیتر خون پمپاژ می‌کند."
+                    ]
+                },
+                brain: {
+                    title: "مغز",
+                    description: "مغز عضو مرکزی سیستم عصبی انسان است.",
+                    facts: [
+                        "عملکرد: بیشتر فعالیت‌های بدن را کنترل می‌کند.",
+                        "مکان: درون جمجمه.",
+                        "واقعیت جالب: مغز انسان حدود ۸۶ میلیارد نورون دارد."
+                    ]
+                },
+                lungs: {
+                    title: "ریه‌ها",
+                    description: "ریه‌ها برای تنفس و تبادل گاز ضروری هستند.",
+                    facts: [
+                        "ساختار: ریه‌ها از میلیون‌ها کیسه هوای کوچک به نام آلوئول تشکیل شده‌اند.",
+                        "عملکرد: خون را اکسیژن می‌کند و دی‌اکسید کربن را حذف می‌کند.",
+                        "مکان: در دو طرف قلب در حفره قفسه سینه.",
+                        "واقعیت جالب: سطح ریه‌ها به اندازه یک زمین تنیس است."
+                    ]
+                },
+                liver: {
+                    title: "کبد",
+                    description: "کبد یک عضو حیاتی با دامنه وسیعی از عملکردها از جمله سم‌زدایی و متابولیسم است.",
+                    facts: [
+                        "عملکرد: مواد مغذی را از سیستم گوارش پردازش می‌کند.",
+                        "مکان: در سمت راست شکم، زیر دیافراگم.",
+                        "واقعیت جالب: کبد می‌تواند خود را بازسازی کند؛ می‌توانید تا ۷۵٪ از آن را از دست بدهید و هنوز هم می‌تواند دوباره رشد کند."
+                    ]
+                },
+                buttons: {
+                    heart: "قلب",
+                    brain: "مغز",
+                    lungs: "ریه‌ها",
+                    liver: "کبد"
+                },
+                modelTitle: "مدل ۳ بعدی",
+                moreInfo: "بیشتر اطلاعات"
+            },
+            ps: {
+                title: "د انسان جاندار",
+                selectOrgan: "یو عضو د پلټنې لپاره وټاکئ",
+                heart: {
+                    title: "قلب",
+                    description: "قلب یو عضوي جاندار دی چې د وینې پمپ کولو لپاره مسؤل دی.",
+                    facts: [
+                        "جوړښت: قلب څلور خوني لري: دوه اتر او دوه خوني.",
+                        "دنده: د بدن په اوږدو کې وینه پمپ کوي.",
+                        "مکان: د سینې په مرکز کې، لږ څه چپ اړخ ته.",
+                        "د زړه زړه ۱: متوسط قلب په ورځ کې ۱۰۰،۰۰۰ ځله تپېږي.",
+                        "د زړه زړه ۲: هغه په آرام حالت کې شاوخوا ۵ تر ۶ لیتره وینه پمپاژ کوي."
+                    ]
+                },
+                brain: {
+                    title: "مغز",
+                    description: "مغز د انسان عصبي سیستم مرکزي عضو دی.",
+                    facts: [
+                        "دنده: د بدن د اکثرو فعالیتونو کنټرول.",
+                        "مکان: د جمجې په دننه کې.",
+                        "د زړه زړه: د انسان مغز شاوخوا ۸۶ میلیارده نیورونه لري."
+                    ]
+                },
+                lungs: {
+                    title: "شش",
+                    description: "ریه د تنفس او ګاز تبادلې لپاره مهم دي.",
+                    facts: [
+                        "جوړښت: ریه د میلیونونو کوچنیو هوایي کڅوړو څخه جوړ شوی دی.",
+                        "دنده: د وینې اکسیجن کول او د کاربن ډای اکساید لرې کول.",
+                        "مکان: د زړه په دواړو خواوو کې په سینې کې.",
+                        "جالب حقیقت: د ریه سطحه د تنیس میدان په اندازه ده."
+                    ]
+                },
+                liver: {
+                    title: "کبد",
+                    description: "کبد یوه مهمه ارګان ده چې د سمسرو کولو او میتابولیزم پراخه دندې لري.",
+                    facts: [
+                        "دنده: د هضم سیستم څخه مواد مغذي پروسس کول.",
+                        "مکان: د شکم په ښي لور کې، د دیافراګم لاندې.",
+                        "جالب حقیقت: کبد کولی شي خپل ځان بیا ولیدل شي."
+                    ]
+                },
+                buttons: {
+                    heart: "قلب",
+                    brain: "مغز",
+                    lungs: "شش",
+                    liver: "جگر"
+                },
+                modelTitle: "۳D ماډل",
+                moreInfo: "نور معلومات"
+            },
+            tr: {
+                title: "İnsan Organ Keşif",
+                selectOrgan: "Keşfetmek için bir organ seçin",
+                heart: {
+                    title: "Kalp",
+                    description: "Kalp, kanı damarlar aracılığıyla pompalamakla sorumlu bir kas organıdır.",
+                    facts: [
+                        "Yapı: Kalp, iki atriyum ve iki ventrikül olmak üzere dört odacığa sahiptir.",
+                        "Fonksiyon: Vücudun tamamında kan pompalar.",
+                        "Konum: Göğsün ortasında, biraz sola doğru.",
+                        "İlginç Gerçek 1: Ortalama bir kalp, günde 100,000 kez atar.",
+                        "İlginç Gerçek 2: Dinlenme halinde dakikada yaklaşık 5-6 litre kan pompalıyor."
+                    ]
+                },
+                brain: {
+                    title: "Beyin",
+                    description: "Beyin, insan sinir sisteminin merkezi organıdır.",
+                    facts: [
+                        "Fonksiyon: Vücudun çoğu aktivitesini kontrol eder.",
+                        "Konum: Kafatasının içinde.",
+                        "İlginç Gerçek: İnsan beyni yaklaşık 86 milyar nörondan oluşur."
+                    ]
+                },
+                lungs: {
+                    title: "Akciğerler",
+                    description: "Akciğerler, nefes alma ve gaz alışverişi için gereklidir.",
+                    facts: [
+                        "Yapı: Akciğerler, milyonlarca küçük hava kesesi olan alveollerden oluşur.",
+                        "Fonksiyon: Kanı oksijenler ve karbondioksiti çıkarır.",
+                        "Konum: Göğüs boşluğunda, kalbin her iki yanında.",
+                        "İlginç Gerçek: Akciğerlerin yüzey alanı yaklaşık bir tenis kortu kadardır."
+                    ]
+                },
+                liver: {
+                    title: "Karaciğer",
+                    description: "Karaciğer, detoksifikasyon ve metabolizma dahil olmak üzere geniş bir işlev yelpazesine sahip hayati bir organdır.",
+                    facts: [
+                        "Fonksiyon: Sindirim sisteminden besinleri işler.",
+                        "Konum: Diyaframın altında, karın sağ tarafında.",
+                        "İlginç Gerçek: Karaciğer kendini yenileyebilir; %75'ine kadar kaybedebilirsiniz ve hala geri büyüyebilir."
+                    ]
+                },
+                buttons: {
+                    heart: "Kalp",
+                    brain: "Beyin",
+                    lungs: "Akciğerler",
+                    liver: "Karaciğer"
+                },
+                modelTitle: "3D Model",
+                moreInfo: "Daha Fazla Bilgi"
+            }
+        };
+
+        const organData = {
+            heart: {
+                title: "Heart",
+                video: "Human Heart.mp4",
+                model: "https://clara.io/player/v2/bef08af4-bf65-4f9f-ab96-e3c8a42fdd3b?wait=true",
+                description: "The heart is a muscular organ responsible for pumping blood through the blood vessels.",
+                facts: [
+                    "Structure: The heart has four chambers: two atria and two ventricles.",
+                    "Function: Pumps blood throughout the body.",
+                    "Location: Center of the chest, slightly to the left.",
+                    "Interesting Fact 1: The average heart beats 100,000 times a day.",
+                    "Interesting Fact 2: It pumps around 5 to 6 liters of blood per minute at rest."
+                ]
+            },
+            brain: {
+                title: "Brain",
+                video: "Brain.mp4",
+                model: "https://clara.io/player/v2/25ca638e-16c2-4d87-8fb6-70cf6b42edcf?wait=true",
+                description: "The brain is the central organ of the human nervous system.",
+                facts: [
+                    "Function: Controls most of the activities of the body.",
+                    "Location: Inside the skull.",
+                    "Interesting Fact: The human brain contains about 86 billion neurons."
+                ]
+            },
+            lungs: {
+                title: "Lungs",
+                video: "Lungs.mp4",
+                model: "https://clara.io/player/v2/7e37e396-e925-44f9-b09a-1b11703bdaca?wait=true",
+                description: "The lungs are essential for breathing and gas exchange.",
+                facts: [
+                    "Structure: The lungs are made up of millions of tiny air sacs called alveoli.",
+                    "Function: Oxygenate blood and remove carbon dioxide.",
+                    "Location: On either side of the heart in the thoracic cavity.",
+                    "Interesting Fact: The surface area of the lungs is roughly the size of a tennis court."
+                ]
+            },
+            liver: {
+                title: "Liver",
+                video: "liver.mp4",
+                model: "https://clara.io/player/v2/a1116ddb-1a7a-46fe-a108-0ca66ee36950?wait=true",
+                description: "The liver is a vital organ with a wide range of functions, including detoxification and metabolism.",
+                facts: [
+                    "Function: Processes nutrients from the digestive system.",
+                    "Location: Right side of the abdomen, below the diaphragm.",
+                    "Interesting Fact: The liver can regenerate itself; you can lose up to 75% of it and it can still grow back."
+                ]
+            }
+        };
+
+        function showOrgan(organ) {
+            const organInfo = organData[organ];
+            const lang = document.getElementById('language-select').value;
+            const translationsForOrgan = translations[lang][organ];
+
+            if (organInfo) {
+                document.getElementById('organ-info').innerHTML = `
+                    <h2 id="organ-title">${translationsForOrgan.title}</h2>
+                    <div class="video">
+                        <video controls>
+                            <source src="${organInfo.video}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <div class="content">
+                        <p>${translationsForOrgan.description}</p>
+                        <h3>${translations[lang].modelTitle}</h3>
+                        <iframe src="${organInfo.model}" height="400" frameborder="0" allowfullscreen></iframe>
+                        <h3>${translations[lang].moreInfo}</h3>
+                        <ul>
+                            ${translationsForOrgan.facts.map(fact => `<li>${fact}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        function changeLanguage() {
+            const selectedLanguage = document.getElementById('language-select').value;
+            document.getElementById('title').innerText = translations[selectedLanguage].title;
+            document.getElementById('organ-title').innerText = translations[selectedLanguage].selectOrgan;
+
+            // Set the text direction
+            document.body.setAttribute('dir', selectedLanguage === 'fa' || selectedLanguage === 'ps' ? 'rtl' : 'ltr');
+
+            // Update button text
+            document.getElementById('heart-button').innerText = translations[selectedLanguage].buttons.heart;
+            document.getElementById('brain-button').innerText = translations[selectedLanguage].buttons.brain;
+            document.getElementById('lungs-button').innerText = translations[selectedLanguage].buttons.lungs;
+            document.getElementById('liver-button').innerText = translations[selectedLanguage].buttons.liver;
+        }
+    </script>
+</body>
+</html>
